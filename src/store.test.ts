@@ -1,4 +1,4 @@
-import { createStore } from "./store";
+import { createStore, combineReducers, IAction } from "./store";
 
 describe("createStore", () => {
   describe("provides api", () => {
@@ -98,5 +98,43 @@ describe("createStore", () => {
       expect(initialReducer).toHaveBeenCalledTimes(1);
       expect(newReducer).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe("combineReducers", () => {
+  it("is a function", () => {
+    expect(combineReducers).toBeInstanceOf(Function);
+  });
+
+  it("returns a function", () => {
+    expect(combineReducers({})).toBeInstanceOf(Function);
+  });
+
+  it("returns reducer based on config", () => {
+    const reducer = combineReducers({
+      a: (state = 3, action: IAction) => state,
+      b: (state = "some string", action: IAction) => state,
+    });
+    expect(reducer(undefined, { type: "some action" })).toEqual({
+      a: 3,
+      b: "some string",
+    });
+  });
+
+  it("calls subreducers with proper values", () => {
+    const action = { type: "some action" };
+    const config = {
+      a: jest.fn((state: number, action: IAction) => 3),
+      b: jest.fn((state: string, action: IAction) => "some string"),
+    };
+    const initialState = { a: 0, b: "" };
+    const reducer = combineReducers(config);
+    const newState = reducer(initialState, action);
+
+    expect(newState).toEqual({ a: 3, b: "some string" });
+    for (const [key, spy] of Object.entries(config)) {
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith(initialState[key as "a" | "b"], action);
+    }
   });
 });

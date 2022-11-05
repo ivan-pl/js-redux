@@ -1,4 +1,4 @@
-interface IAction {
+export interface IAction {
   type: string;
   payload?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
@@ -46,3 +46,29 @@ export function createStore(
     },
   };
 }
+
+type TCombineReducers<ReducersConfig = any, Action = { type: any }> = (config: {
+  [key in keyof ReducersConfig]: (
+    state: ReducersConfig[key] | undefined,
+    action: Action
+  ) => ReducersConfig[key];
+}) => (
+  state:
+    | {
+        [key in keyof ReducersConfig]: ReducersConfig[key];
+      }
+    | undefined,
+  action: Action
+) => {
+  [key in keyof ReducersConfig]: ReducersConfig[key];
+};
+
+export const combineReducers: TCombineReducers = (config) => {
+  return (state, action) => {
+    const newState = { ...state };
+    for (const [key, reducer] of Object.entries(config)) {
+      newState[key] = reducer(newState[key], action);
+    }
+    return newState;
+  };
+};
