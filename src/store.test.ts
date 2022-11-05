@@ -82,5 +82,21 @@ describe("createStore", () => {
       store.dispatch(action);
       expect(spy).toHaveBeenCalledTimes(1);
     });
+
+    it("allows to replace reducer", () => {
+      const action = { type: "x" };
+      const initialReducer = jest.fn();
+      const newReducer = jest.fn();
+      const store = createStore(initialReducer);
+
+      store.dispatch(action);
+      expect(initialReducer).toHaveBeenCalledTimes(1);
+      expect(newReducer).not.toHaveBeenCalled();
+
+      store.replaceReducer(newReducer);
+      store.dispatch(action);
+      expect(initialReducer).toHaveBeenCalledTimes(1);
+      expect(newReducer).toHaveBeenCalledTimes(1);
+    });
   });
 });

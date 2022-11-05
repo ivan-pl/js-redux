@@ -11,12 +11,13 @@ interface IStore {
   dispatch(action: IAction): void;
   getState(): TState;
   subscribe(cb: TSubscriber): () => void;
+  replaceReducer(reducer: TReducer): void;
 }
 
-export type TReducer<State> = (state: State, action: IAction) => State;
+export type TReducer = (state: TState, action: IAction) => TState;
 
 export function createStore(
-  reducer: TReducer<TState>,
+  reducer: TReducer,
   initialState: TState = {}
 ): IStore {
   let state = initialState;
@@ -33,11 +34,15 @@ export function createStore(
       return state;
     },
 
-    subscribe(subscriber: TSubscriber) {
+    subscribe(subscriber) {
       subscribers.add(subscriber);
       return () => {
         subscribers.delete(subscriber);
       };
+    },
+
+    replaceReducer(newReducer) {
+      reducer = newReducer;
     },
   };
 }
