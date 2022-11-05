@@ -1,27 +1,43 @@
-interface IStore<
-  State = any, // eslint-disable-line @typescript-eslint/no-explicit-any
-  Action extends { type: string; payload?: any } = { type: string } // eslint-disable-line @typescript-eslint/no-explicit-any
-> {
-  dispatch(action: Action): void;
-  getState(): State;
-  subscribe(cb: (state: State) => void): () => void;
+interface IAction {
+  type: string;
+  payload?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
-type Reducer<State, Action> = (state: State, action: Action) => Action;
+type TState = { [key: string]: any };
 
-export function createStore<State, Action>(
-  reducer: Reducer<State, Action>,
-  initialState: State
+type TSubscriber = (state: TState) => void;
+
+interface IStore {
+  dispatch(action: IAction): void;
+  getState(): TState;
+  subscribe(cb: TSubscriber): () => void;
+}
+
+export type TReducer<State> = (state: State, action: IAction) => State;
+
+export function createStore(
+  reducer: TReducer<TState>,
+  initialState: TState = {}
 ): IStore {
-  const state = initialState;
+  let state = initialState;
+  const subscribers: Set<TSubscriber> = new Set();
+
   return {
-    dispatch(action) {}, // eslint-disable-line
+    dispatch(action) {
+      const newState = reducer(state, action);
+      state = newState;
+      subscribers.forEach((subscriber) => subscriber(newState));
+    },
+
     getState() {
       return state;
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    subscribe(cb) {
-      return () => {}; // eslint-disable-line
+
+    subscribe(subscriber: TSubscriber) {
+      subscribers.add(subscriber);
+      return () => {
+        subscribers.delete(subscriber);
+      };
     },
   };
 }
