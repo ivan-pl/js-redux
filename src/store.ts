@@ -8,7 +8,7 @@ type TState = { [key: string]: any };
 type TSubscriber = (state: TState) => void;
 
 interface IStore {
-  dispatch(action: IAction): void;
+  dispatch(action: IAction): IAction;
   getState(): TState;
   subscribe(cb: TSubscriber): () => void;
   replaceReducer(reducer: TReducer): void;
@@ -28,6 +28,7 @@ export function createStore(
       const newState = reducer(state, action);
       state = newState;
       subscribers.forEach((subscriber) => subscriber(newState));
+      return action;
     },
 
     getState() {
@@ -72,3 +73,19 @@ export const combineReducers: TCombineReducers = (config) => {
     return newState;
   };
 };
+
+export type TMiddleware = (
+  store: IStore
+) => (next: IStore["dispatch"]) => (action: IAction) => IAction;
+
+export function applyMiddleware(
+  store: IStore,
+  middlewares: TMiddleware[]
+): IStore {
+  middlewares = middlewares.slice();
+  middlewares.reverse();
+  let dispatch = store.dispatch;
+
+  middlewares.forEach((middleware) => (dispatch = middleware(store)(dispatch)));
+  return Object.assign({}, store, { dispatch });
+}

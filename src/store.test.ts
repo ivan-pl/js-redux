@@ -1,4 +1,10 @@
-import { createStore, combineReducers, IAction } from "./store";
+import {
+  createStore,
+  combineReducers,
+  applyMiddleware,
+  IAction,
+  TMiddleware,
+} from "./store";
 
 describe("createStore", () => {
   describe("provides api", () => {
@@ -136,5 +142,35 @@ describe("combineReducers", () => {
       expect(spy).toHaveBeenCalledTimes(1);
       expect(spy).toHaveBeenCalledWith(initialState[key as "a" | "b"], action);
     }
+  });
+});
+
+describe("applyMiddleware", () => {
+  it("is a function", () => {
+    expect(applyMiddleware).toBeInstanceOf(Function);
+  });
+
+  it("returns store", () => {
+    const store = createStore(jest.fn());
+    const newStore = applyMiddleware(store, [
+      () => () => () => ({ type: "unknown" }),
+    ]);
+    expect(Object.keys(store)).toEqual(Object.keys(newStore));
+  });
+
+  it("calls middlewares", () => {
+    const spy = jest.fn();
+    const middlewares: TMiddleware[] = Array.from({ length: 5 }, (_, i) => {
+      return (store) => (next) => (action) => {
+        spy(i);
+        return next(action);
+      };
+    });
+    const reducer = jest.fn(() => spy(5));
+    const store = createStore(reducer);
+    const storeWithMiddlewares = applyMiddleware(store, middlewares);
+    storeWithMiddlewares.dispatch({ type: "some action" });
+
+    expect(spy.mock.calls.map((args) => args[0])).toEqual([0, 1, 2, 3, 4, 5]);
   });
 });
